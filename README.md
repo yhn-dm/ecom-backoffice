@@ -1,54 +1,87 @@
-# Backend Spring Boot – API E‑commerce
+# E-commerce Back-Office API
 
-## Présentation du projet
+[![Java 17](https://img.shields.io/badge/Java-17+-orange.svg)](https://openjdk.org/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.5-brightgreen.svg)](https://spring.io/projects/spring-boot)
+[![Maven](https://img.shields.io/badge/Maven-3.x-blue.svg)](https://maven.apache.org/)
+[![MySQL](https://img.shields.io/badge/MySQL-8.x-4479A1.svg)](https://www.mysql.com/)
+[![Swagger](https://img.shields.io/badge/OpenAPI-3.0-green.svg)](https://swagger.io/)
 
-Ce projet est une API REST développée avec **Spring Boot**, sécurisée par **JWT**, documentée avec **Swagger (OpenAPI)** et connectée à une base de données **MySQL**.
+REST API for an e-commerce back-office: JWT-secured, documented with Swagger/OpenAPI, backed by MySQL. Handles auth, admin (users, roles, product CRUD), product catalog, and orders.
 
-L’API permet de :
+---
 
-* Gérer les utilisateurs (inscription / connexion)
-* Gérer les produits et catégories (admin)
-* Passer et consulter des commandes
+## Table of contents
 
+- [What it is](#what-it-is)
+- [Features](#features)
+- [Tech stack](#tech-stack)
+- [Prerequisites](#prerequisites)
+- [Quick start](#quick-start)
+- [Configuration](#configuration)
+- [Running the app](#running-the-app)
+- [API & authentication](#api--authentication)
+- [Recommended request flow](#recommended-request-flow)
+- [Project structure](#project-structure)
+- [Screenshots](#screenshots)
+- [Troubleshooting](#troubleshooting)
 
-## Prérequis
+---
 
-* Java 17+
-* Maven
-* **XAMPP** (uniquement pour MySQL)
-* Un navigateur web
+## What it is
 
+This project is a **back-office e-commerce REST API** built with Spring Boot. It is intended as the backend for a storefront (web or mobile). It exposes endpoints for user registration and login, role-based admin (users, product CRUD), public product listing and search, and order creation and listing.
 
-## Installation de l’environnement MySQL avec XAMPP
+---
 
-### 1. Lancer XAMPP
+## Features
 
-* Démarrer **Apache** (optionnel)
-* Démarrer **MySQL**
+- **Authentication:** Register and login with JWT (Bearer token).
+- **Admin:** List users, change user roles; full product CRUD (create, update, delete).
+- **Catalog:** List products, get by ID, search (public endpoints).
+- **Orders:** Create an order (authenticated), list my orders.
+- **Documentation:** Interactive Swagger UI and raw OpenAPI spec.
 
-### 2. Accéder à phpMyAdmin
+---
 
-```
-http://localhost/phpmyadmin
-```
+## Tech stack
 
-### 3. Création manuelle de la base de données
+| Layer        | Technology                          |
+|-------------|--------------------------------------|
+| Language    | Java 17                              |
+| Framework   | Spring Boot 3.2.5                    |
+| Security    | Spring Security + JWT (jjwt 0.11.5)  |
+| Persistence | Spring Data JPA, MySQL, Hibernate    |
+| API docs    | springdoc-openapi (Swagger/OpenAPI 3)|
+| Build       | Maven (wrapper included)             |
 
-Créer une base de données nommée :
+Architecture follows the usual Spring layout: **controllers** → **services** → **repositories** → **entities**, with **config** (Security, CORS, OpenAPI), **dto**, and **security** (JWT filter, user details).
 
-```
-app_backend
-```
+---
 
-* Encodage recommandé : `utf8mb4_general_ci`
+## Prerequisites
 
-Aucune table n’est à créer manuellement.
-**Hibernate se charge automatiquement au premier lancement de creer les tables** (`spring.jpa.hibernate.ddl-auto=update`).
+- **Java 17+**
+- **Maven** (or use the project’s `mvnw` / `mvnw.cmd`)
+- **MySQL** (e.g. via XAMPP or any MySQL server)
+- A browser (for Swagger UI)
 
+---
 
-## Configuration de l’application
+## Quick start
 
-Fichier : `src/main/resources/application.properties`
+1. **MySQL:** Create a database named `app_backend` (e.g. in phpMyAdmin: `http://localhost/phpmyadmin`). Recommended collation: `utf8mb4_general_ci`. No need to create tables — Hibernate creates them on first run (`spring.jpa.hibernate.ddl-auto=update`).
+2. **Config:** If needed, adjust `src/main/resources/application.properties` (see [Configuration](#configuration)).
+3. **Run:** From the project root:
+   ```bash
+   mvn spring-boot:run
+   ```
+4. **Try it:** Open [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html).
+
+---
+
+## Configuration
+
+Edit `src/main/resources/application.properties`:
 
 ```properties
 spring.datasource.url=jdbc:mysql://localhost:3306/app_backend
@@ -57,178 +90,78 @@ spring.datasource.password=
 
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
 
 server.port=8080
 ```
 
+Change `username` and `password` if your MySQL setup differs.
 
-## Lancer le projet
+---
 
-Depuis la racine du projet :
+## Running the app
+
+From the project root:
 
 ```bash
 mvn spring-boot:run
 ```
 
-L’API sera disponible sur :
+API base URL: **http://localhost:8080**
+
+---
+
+## API & authentication
+
+- **Auth:** `POST /api/auth/register`, `POST /api/auth/login` (returns JWT).
+- **Admin:** `GET /api/admin/users`, `PUT /api/admin/users/{id}/role`, `POST/PUT/DELETE /api/admin/products`.
+- **Products (public):** `GET /api/products`, `GET /api/products/{id}`, `GET /api/products/search`.
+- **Orders (authenticated):** `POST /api/orders`, `GET /api/orders/my-orders`.
+
+Protected routes require a **Bearer token**. After login, copy the token and in Swagger use **Authorize** and set: `Bearer <your-token>`.
+
+- **Swagger UI:** [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
+- **OpenAPI JSON:** [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
+
+---
+
+## Recommended request flow
+
+1. `POST /api/auth/register` — create a user  
+2. `POST /api/auth/login` — get JWT  
+3. (Admin) `GET /api/admin/users`, `PUT /api/admin/users/{id}/role`  
+4. (Admin) `POST /api/admin/products`, then `PUT`/`DELETE` as needed  
+5. `GET /api/products` or `/api/products/search` — browse catalog  
+6. `POST /api/orders` — create order (with JWT)  
+7. `GET /api/orders/my-orders` — list my orders (with JWT)
+
+---
+
+## Project structure
 
 ```
-http://localhost:8080
+src/main/java/com/example/backend/
+├── controller/   # Auth, Admin, Product, Order, Root
+├── service/
+├── repository/
+├── entity/       # User, Role, Product, Category, Order, OrderStatus
+├── dto/
+├── config/       # Security, CORS, OpenAPI, exception handling
+├── security/      # JWT filter, UserDetails, JwtUtil
+└── seed/         # Optional data seeding
+docs/screenshots/ # API/screen captures
 ```
 
+---
 
-## Accès à Swagger (documentation API)
+## Screenshots
 
-Interface Swagger UI :
-
-```
-http://localhost:8080/swagger-ui/index.html
-```
-
-Documentation OpenAPI brute :
-
-```
-http://localhost:8080/v3/api-docs
-```
-
-
-## Authentification (JWT)
-
-Certaines routes nécessitent un **Bearer Token**.
-
-Après connexion, copier le token retourné et l’ajouter dans Swagger :
-
-```
-Authorization: Bearer <TOKEN>
-```
-
-
-## Ordre recommandé des requêtes
-
-### 1. Inscription d’un utilisateur
-
-`POST /api/auth/register`
-
-![Register](docs/screenshots/Register.png)
+Example requests and responses are captured in `docs/screenshots/` (register, login, admin, products, orders).
 
 ---
 
-### 2. Connexion utilisateur
+## Troubleshooting
 
-`POST /api/auth/login`
-
-Récupérer le JWT
-
-![Login](docs/screenshots/Login.png)
-
----
-
-### 3. Liste des utilisateurs (ADMIN)
-
-`GET /api/admin/users`
-
-Token requis
-
-![Index Users](docs/screenshots/IndexUsers.png)
-
----
-
-### 4. Changement de rôle d’un utilisateur (ADMIN)
-
-`PUT /api/admin/users/{id}/role`
-
-Token requis
-
-![Change User Role](docs/screenshots/ChangeUserRole.png)
-
----
-
-### 5. Création d’un produit (ADMIN)
-
-`POST /api/admin/products`
-
-Token requis
-
-![Create Product](docs/screenshots/CreateProduct.png)
-
----
-
-### 6. Modification d’un produit (ADMIN)
-
-`PUT /api/admin/products/{id}`
-
-Token requis
-
-![Modify Product](docs/screenshots/ModifyProduct.png)
-
----
-
-### 7. Suppression d’un produit (ADMIN)
-
-`DELETE /api/admin/products/{id}`
-
-Token requis
-
-![Delete Product](docs/screenshots/DeleteProduct.png)
-
----
-
-### 8. Liste des produits
-
-`GET /api/products`
-
-![List Products](docs/screenshots/ListProducts.png)
-
----
-
-### 9. Recherche de produit
-
-`GET /api/products/search`
-
-![Search Product](docs/screenshots/SearchProduct.png)
-
----
-
-### 10. Détail d’un produit
-
-`GET /api/products/{id}`
-
-![Product Detail](docs/screenshots/SeeProductDetail.png)
-
----
-
-### 11. Création d’une commande
-
-`POST /api/orders`
-
-Token requis
-
-![Create Order](docs/screenshots/CreateOrder.png)
-
----
-
-### 12. Consultation des commandes
-
-`GET /api/orders`
-
-Token requis
-
-![See Orders](docs/screenshots/SeeOrders.png)
-
----
-
-## Structure du projet
-
-```
-backend
-├── controller
-├── service
-├── repository
-├── entity
-├── dto
-├── config
-├── security
-└── docs
-    └── screenshots
-```
-
+- **Port 8080 in use:** Change `server.port` in `application.properties` or stop the process using 8080.
+- **MySQL connection refused:** Ensure MySQL is running (e.g. start MySQL in XAMPP). Check host, port (3306), and credentials.
+- **Database/encoding:** Use `utf8mb4_general_ci` for the `app_backend` database to avoid encoding issues.
